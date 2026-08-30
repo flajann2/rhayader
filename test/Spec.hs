@@ -14,7 +14,7 @@ main = do
 
 mainSS :: SS ()
 mainSS = do
-  cfg <- getConfig
+  cfg     <- getConfig
   critter <- mkCritter [ node mkRegular             Input  -- 0
                        , node mkRegular             Input  -- 1
                        , node mkRegular             Input  -- 2

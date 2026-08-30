@@ -1,6 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MonoLocalBinds #-}
 
+-- TODO: Move this into Engine.NEAT
+
 module SSMonad ( module SSMonad
                , module Control.Monad.Trans.State
                , module Data.Semigroup
