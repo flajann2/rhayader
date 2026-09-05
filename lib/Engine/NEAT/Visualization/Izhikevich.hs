@@ -1,4 +1,3 @@
-
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedRecordDot #-}
@@ -46,18 +45,18 @@ data CameraState = CameraState
   , orbitPitch    :: !Float
   , orbitDistance :: !Float
   }
-  
+
 data Config = Config { windowWidth   :: Int
                      , windowHeight  :: Int
-                     , neuronParams  :: IzhikevichParams
+                     , neuronParams  :: IzhikevichParams Float
                      , initialCamera :: CameraState
                      , tau           :: Double  -- delay embedding lag
                      , initialI      :: Float   -- injected/synaptic current
                      , windowName    :: String
                      }
 
-initialIzhikevichParams :: IzhikevichParams
-initialIzhikevichParams = (IzhikevichParams 0.02 0.2 (-65.0) 8.0) 
+initialIzhikevichParams :: IzhikevichParams Float
+initialIzhikevichParams = (IzhikevichParams 0.02 0.2 (-65.0) 8.0)
 
 defaultConfig :: Config
 defaultConfig = (Config 2560 1600
@@ -69,7 +68,7 @@ defaultConfig = (Config 2560 1600
                 )
 defaultI = 10.0  -- injected/synaptic current
 
-initialNeuronState :: IzhikevichParams -> NeuronState
+initialNeuronState :: IzhikevichParams Float -> NeuronState Float
 initialNeuronState ns = NeuronState ns.zc (ns.zb * ns.zc)
 
 -- | Delay-embedding window: how many 1ms steps back to sample v(t-tau) from.
@@ -140,7 +139,7 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
 
     resetPressed <- isKeyPressed KeyR
     when resetPressed $ do
-      writeIORef neuronRef neuron 
+      writeIORef neuronRef neuron
       writeIORef trailRef []
       writeIORef vHistoryRef []
     dragging        <- isMouseButtonDown MouseButtonRight

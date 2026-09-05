@@ -22,7 +22,7 @@ import GHC.Generics (Generic)
 import Data.ULID
 import Data.WideWord.Word128
 import SSMonad ( SS, getConfig )
-import SSNumeric ( SSNumeric )
+import RealNum
 import GHC.Plugins (assertPprMaybe)
 
 import Data.Stream.Zio.Dealer
@@ -73,7 +73,8 @@ sendZioStream :: forall a1. (Serialize a1, Serialize Word128) => NameID
               -> Address
               -> Topic
               -> (Payload a1 -> Payload a1)
-              -> SS ()
+              -> SS a1 ()
+              
 sendZioStream (NameID nid) (Address addr) (Topic topic) f = do
   cfg <- getConfig
   return ()
@@ -84,5 +85,5 @@ sendZioStream (NameID nid) (Address addr) (Topic topic) f = do
 recvZioStream ::  forall a1. (Serialize a1) => Address
               -> Topic
               -> (Payload a1 -> Bool)
-              -> SS (Payload a1)
+              -> SS a1 (Payload a1)
 recvZioStream (Address addr) (Topic topic) f = undefined 

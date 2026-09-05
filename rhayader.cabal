@@ -55,10 +55,11 @@ common bincoms
 
 library
     import: commons
+    autogen-modules: Paths_rhayader
     exposed-modules:
         Engine.NEAT
       , SSMonad
-      , SSNumeric
+      , RealNum
       , Engine.Clock
       , Engine.AI
       , Engine.Combinators

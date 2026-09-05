@@ -1,7 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Engine.NEAT ( module SSMonad
-                   , module SSNumeric
+                   , module RealNum
                    , module Engine.NEAT.Genetics.Genes
                    , module Engine.NEAT.Genetics.Neurons
                    , module Engine.NEAT.Genetics.Critters
@@ -11,7 +11,7 @@ module Engine.NEAT ( module SSMonad
                    ) where
 
 import SSMonad
-import SSNumeric
+import RealNum
 import Engine.NEAT.Genetics.Genes
 import Engine.NEAT.Genetics.Neurons
 import Engine.NEAT.Genetics.Critters

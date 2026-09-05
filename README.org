@@ -17,6 +17,7 @@
     - [[#heirarchial-temporal-memory-htm][Heirarchial Temporal Memory (HTM)]]
     - [[#pytorch-integration][PyTorch Integration]]
     - [[#tensorflow-integration][TensorFlow Integration]]
+  - [[#sdrs][SDRs]]
 
 ** The usual stuff
   #+CAPTION: Rhayader
@@ -24,7 +25,7 @@
   [[./images/rhayader_silloute_0.jpg]]
 
   #+BEGIN_EXPORT html
-  <img src="./images/rhayader_silloute_0.jpg" alt="My example image" width="150"/>
+  <img src="./images/rhayader_puejinke_1.jpg" alt="My example image" width="150"/>
   #+END_EXPORT 
 *** Author: Fred Mitchell
 *** License: MIT
@@ -126,4 +127,37 @@
 *** Heirarchial Temporal Memory (HTM)
 *** PyTorch Integration
 *** TensorFlow Integration
-      
+** SDRs
+   The followings are nothing more than the dangerous yammerings
+   of a cantankerous old fool. Nothing to see here. Move it along.
+
+   + I'm putting this note here about SDRs because I just
+     came up with the I think brilliant idea that the
+     Critter's input and output via SDRs and whatever they
+     do internally is their own business but those are
+     transformed into SDRs. Even the number of input and
+     output nodes (neurons) are not rendered irrevelant. They will
+     have encodings to output SDRs or evolve connections to input SDRs
+
+    
+
+   + My God it just occurred to me that words can be
+     represented SDRs instead of using tokens we use
+     SDRs and a whole sentence and either be a stream of
+     SDRs or one big 'gigantic' SDR.
+
+     I'm going to have to
+     think about this which way is best to represent what
+     we need a lot of experimentation here but one thing
+     is for certain sdrs are the future
+  
+   + I just thought of something with the dent right so
+     so to speak of the neurons that are interfacing with
+     the SDRs. They can interface with multiple bits, not
+     just one, and have processing going on at that level
+     very similar to what goes on with some neurons in the brain,
+     in the dentrites where they sort of are like sub neurons.
+     
+     That connection to the SDRs can be Gausian distributed over
+     a small number, so one dentrite can carry information from multiple
+     bits.
