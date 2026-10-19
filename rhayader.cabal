@@ -42,6 +42,7 @@ common commons
       , conduit
       , h-raylib
       , clock
+      , acid-state
     default-language: GHC2024
     default-extensions:
         OverloadedRecordDot
