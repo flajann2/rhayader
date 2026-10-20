@@ -28,6 +28,11 @@ module Data.SDR
   , module Data.SDR.Algebras
   , module Data.SDR.Encoders
   , module Data.SDR.Slicing
+  , module Data.SDR.Similarity
+  , module Data.SDR.Stats
+  , module Data.SDR.Combinatorics
+  , module Data.SDR.Composition
+  , module Data.SDR.Search
   ) where
 
 import Data.SDR.Core
@@ -36,3 +41,8 @@ import Data.SDR.Infix
 import Data.SDR.Encoders
 import Data.SDR.Slicing
 import Data.SDR.Algebras
+import Data.SDR.Similarity
+import Data.SDR.Stats
+import Data.SDR.Combinatorics
+import Data.SDR.Composition
+import Data.SDR.Search

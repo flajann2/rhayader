@@ -2,16 +2,20 @@
 {-# LANGUAGE MonoLocalBinds #-}
 
 -- TODO: Move this into Engine.NEAT
-
 module SSMonad ( module RealNum
                , module Control.Monad.Trans.State
                , module Data.Semigroup
                , module Data.Complex
                , liftIO
                , Config(..)
+               , initialConfig
                , getConfig
+               , updateConfig
                , nextRandom
+               , nextSequenceNumber
+               , nextInnovationNumber
                , SS(..)
+               , nsi
                , nxi
                , Random(..)
                ) where

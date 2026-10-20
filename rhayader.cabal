@@ -80,6 +80,12 @@ library
       , Data.SDR.Infix
       , Data.SDR.Pooling
       , Data.SDR.Slicing
+      , Data.SDR.Similarity
+      , Data.SDR.Stats
+      , Data.SDR.Combinatorics
+      , Data.SDR.Composition
+      , Data.SDR.Search
+      , Data.SDR.Laws
       , Data.Stream.Zio
       , Data.Stream.Zio.Common
       , Data.Stream.Zio.Dealer
@@ -159,12 +165,12 @@ executable main
 ----     ghc-options: -rtsopts -with-rtsopts=-N
 ----     main-is:     Unagi.hs
 ----     hs-source-dirs: playground
-
-executable playground-dsl
-    import:      commons, bincoms
-    ghc-options: -rtsopts -with-rtsopts=-N
-    main-is:     CritterDSL.hs
-    hs-source-dirs: playground
+---- 
+---- executable playground-dsl
+----     import:      commons, bincoms
+----     ghc-options: -rtsopts -with-rtsopts=-N
+----     main-is:     CritterDSL.hs
+----     hs-source-dirs: playground
 
 executable playground-rl-example
     import:      commons, bincoms
@@ -204,6 +210,15 @@ test-suite ss-spec
     build-depends:
         hspec
       , QuickCheck
+
+test-suite sdr-spec
+    import:      commons, bincoms
+    type:        exitcode-stdio-1.0
+    main-is:     SDRSpec.hs
+    hs-source-dirs: test
+    ghc-options: -rtsopts
+    build-depends:
+        QuickCheck
 
 executable playground-sdr
     import:      commons, bincoms

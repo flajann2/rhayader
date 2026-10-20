@@ -4,6 +4,13 @@
 module Main where
 
 import Engine.NEAT
+    ( liftIO
+    , evalStateT
+    , SS(runSS)
+    , initialConfig
+    , nextSequenceNumber
+    , nextInnovationNumber
+    , getConfig )
 
 main :: IO ()
 main = do
@@ -11,7 +18,7 @@ main = do
   _ <- evalStateT (runSS mainSS) iconfig
   return ()
 
-mainSS :: SS ()
+mainSS :: SS Double ()
 mainSS = do 
   s1 <- nextSequenceNumber 
   s2 <- nextSequenceNumber 
@@ -24,7 +31,7 @@ mainSS = do
     ++ " and Innov " ++ show ar
     ++ "\n and the config: " ++ show cfg
     where
-      seqtest :: SS [Int]
+      seqtest :: SS Double [Int]
       seqtest = do
         ss4 <- nextInnovationNumber
         ss5 <- nextInnovationNumber

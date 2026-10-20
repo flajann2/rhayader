@@ -29,6 +29,11 @@ mkSDRUnsafe = SDR
 emptySDR :: Int -> SDR
 emptySDR w = SDR w IS.empty
 
+-- | Number of active bits, w_x = |x|.
+sdrWeight :: SDR -> Int
+sdrWeight = IS.size . sdrBits
+{-# INLINE sdrWeight #-}
+
 requireSameWidth :: SDR -> SDR -> a -> a
 requireSameWidth a b x
   | sdrWidth a == sdrWidth b = x
