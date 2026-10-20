@@ -8,3 +8,4 @@ swiss-army-knife-hs/
 dist-newstyle/
 *.orig
 *.fish
+foo/
