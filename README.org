@@ -22,10 +22,9 @@
 ** The usual stuff
   #+CAPTION: Rhayader
   #+ATTR_ORG: :width 150
-  [[./images/rhayader_silloute_0.jpg]]
-
+  [[[[./images/rhayader_purjinke_0.jpg]]]]
   #+BEGIN_EXPORT html
-  <img src="./images/rhayader_puejinke_1.jpg" alt="My example image" width="150"/>
+  <img src="./images/rhayader_purjinke_0.jpg" alt="Rhayader" width="150"/>
   #+END_EXPORT 
 *** Author: Fred Mitchell
 *** License: MIT
