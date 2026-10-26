@@ -12,9 +12,9 @@ main = do
   let iconfig = initialConfig
   evalStateT (runSS  mainSS) iconfig
 
-mainSS :: SS ()
+mainSS :: SS Double ()
 mainSS = do
-  cfg <- getConfig
+  cfg     <- getConfig
   critter <- mkCritter [ node mkRegular             Input  -- 0
                        , node mkRegular             Input  -- 1
                        , node mkRegular             Input  -- 2

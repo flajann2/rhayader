@@ -20,16 +20,16 @@ module Engine.NEAT.Izhikevich where
 -- **Why this matters for your delay embedding**
 -- 
 -- Your choice of `(v(t), u(t), v(t-τ))` is interesting because `v` is fast/spiky and `u` is slow/smooth — they already form a natural fast-slow pair, similar to how the Lorenz system has a fast variable and slower ones. Using `v(t-τ)` as a stand-in for a third independent dimension works because `v` alone doesn't have enough memory in it to unfold the attractor (the spike reset destroys information), but `u` partially compensates since it integrates spike history. You'll likely see the reset rule show up as a visible discontinuity or fold in the embedded trajectory — worth watching for when `v` hits 30 and jumps to `c`, since that's a non-smooth event that a pure delay-embedding of a smooth ODE wouldn't have.
-data NeuronState = NeuronState { nV :: !Float
-                               , nU :: !Float
-                               }
+data NeuronState a = NeuronState { nV :: !a
+                                  , nU :: !a
+                                  }
 
-data IzhikevichParams = IzhikevichParams { za -- ^ recovery time scale
-                                         , zb -- ^ sensitivity of u to subth
-                                         , zc -- ^ post-spike reset value of
-                                         , zd -- ^ post-spike bump to u
-                                           :: !Float
-                                         }
+data IzhikevichParams a = IzhikevichParams { za -- ^ recovery time scale
+                                            , zb -- ^ sensitivity of u to subth
+                                            , zc -- ^ post-spike reset value of
+                                            , zd -- ^ post-spike bump to u
+                                              :: !a
+                                            }
 
 -- | One 1ms integration step: two 0.5ms half-steps for v (stability near the
 --   v^2 spike-threshold nonlinearity), one full step for u, then reset on spike.
@@ -68,7 +68,7 @@ data IzhikevichParams = IzhikevichParams { za -- ^ recovery time scale
 -- show up as the trajectory looping through a slower,
 -- larger-amplitude excursion before returning to the fast spike manifold.
 
-stepIzh :: Float -> IzhikevichParams -> Float -> NeuronState -> NeuronState
+stepIzh :: RealFloat a => a -> IzhikevichParams a -> a -> NeuronState a -> NeuronState a
 stepIzh dt (IzhikevichParams a b c d) iCur (NeuronState v u) =
   let half = dt / 2
       v1 = v  + half * (0.04 * v  * v  + 5 * v  + 140 - u + iCur)
@@ -77,3 +77,76 @@ stepIzh dt (IzhikevichParams a b c d) iCur (NeuronState v u) =
   in if v2 >= 30
      then NeuronState c (u' + d)   -- d applied once, per spike event, no dt scaling needed
      else NeuronState v2 u'
+
+-- Table 1: Canonical cortical/thalamic types
+
+mkRegularSpiking :: Fractional a => IzhikevichParams a
+mkRegularSpiking = IzhikevichParams { za = 0.02, zb = 0.2, zc = -65, zd = 8 }
+
+mkIntrinsicallyBursting :: Fractional a => IzhikevichParams a
+mkIntrinsicallyBursting = IzhikevichParams { za = 0.02, zb = 0.2, zc = -55, zd = 4 }
+
+mkChattering :: Fractional a => IzhikevichParams a
+mkChattering = IzhikevichParams { za = 0.02, zb = 0.2, zc = -50, zd = 2 }
+
+mkFastSpiking :: Fractional a => IzhikevichParams a
+mkFastSpiking = IzhikevichParams { za = 0.1, zb = 0.2, zc = -65, zd = 2 }
+
+mkLowThresholdSpiking :: Fractional a => IzhikevichParams a
+mkLowThresholdSpiking = IzhikevichParams { za = 0.02, zb = 0.25, zc = -65, zd = 2 }
+
+mkThalamocortical :: Fractional a => IzhikevichParams a
+mkThalamocortical = IzhikevichParams { za = 0.02, zb = 0.25, zc = -65, zd = 0.05 }
+
+mkResonator :: Fractional a => IzhikevichParams a
+mkResonator = IzhikevichParams { za = 0.1, zb = 0.26, zc = -65, zd = 2 }
+
+mkThalamicReticular :: Fractional a => IzhikevichParams a
+mkThalamicReticular = IzhikevichParams { za = 0.1, zb = 0.25, zc = -65, zd = 2.05 }
+
+-- Table 2: Other named dynamical classes
+
+mkClass1Excitable :: Fractional a => IzhikevichParams a
+mkClass1Excitable = IzhikevichParams { za = 0.02, zb = -0.1, zc = -55, zd = 6 }
+
+mkClass2Excitable :: Fractional a => IzhikevichParams a
+mkClass2Excitable = IzhikevichParams { za = 0.2, zb = 0.26, zc = -65, zd = 0 }
+
+mkSpikeLatency :: Fractional a => IzhikevichParams a
+mkSpikeLatency = IzhikevichParams { za = 0.02, zb = 0.2, zc = -65, zd = 6 }
+
+mkSubthresholdOscillations :: Fractional a => IzhikevichParams a
+mkSubthresholdOscillations = IzhikevichParams { za = 0.05, zb = 0.26, zc = -60, zd = 0 }
+
+mkResonatorAlt :: Fractional a => IzhikevichParams a
+mkResonatorAlt = IzhikevichParams { za = 0.1, zb = 0.26, zc = -60, zd = -1 }
+
+mkIntegrator :: Fractional a => IzhikevichParams a
+mkIntegrator = IzhikevichParams { za = 0.02, zb = -0.1, zc = -55, zd = 6 }
+
+mkReboundSpike :: Fractional a => IzhikevichParams a
+mkReboundSpike = IzhikevichParams { za = 0.03, zb = 0.25, zc = -60, zd = 4 }
+
+mkReboundBurst :: Fractional a => IzhikevichParams a
+mkReboundBurst = IzhikevichParams { za = 0.03, zb = 0.25, zc = -52, zd = 0 }
+
+mkThresholdVariability :: Fractional a => IzhikevichParams a
+mkThresholdVariability = IzhikevichParams { za = 0.03, zb = 0.25, zc = -60, zd = 4 }
+
+mkBistability :: Fractional a => IzhikevichParams a
+mkBistability = IzhikevichParams { za = 1.0, zb = 1.5, zc = -60, zd = 0 }
+
+mkDepolarizingAfterpotential :: Fractional a => IzhikevichParams a
+mkDepolarizingAfterpotential = IzhikevichParams { za = 1.0, zb = 0.2, zc = -60, zd = -21 }
+
+mkAccommodation :: Fractional a => IzhikevichParams a
+mkAccommodation = IzhikevichParams { za = 0.02, zb = 1.0, zc = -55, zd = 4 }
+
+mkInhibitionInducedSpiking :: Fractional a => IzhikevichParams a
+mkInhibitionInducedSpiking = IzhikevichParams { za = -0.02, zb = -1.0, zc = -60, zd = 8 }
+
+mkInhibitionInducedBursting :: Fractional a => IzhikevichParams a
+mkInhibitionInducedBursting = IzhikevichParams { za = -0.026, zb = -1.0, zc = -45, zd = 0 }
+
+mkMixedMode :: Fractional a => IzhikevichParams a
+mkMixedMode = IzhikevichParams { za = 0.02, zb = 0.2, zc = -55, zd = 4 }

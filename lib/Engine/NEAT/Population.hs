@@ -4,9 +4,9 @@ import Engine.NEAT.Genetics.Critters
 import SSMonad ( SS )
 -- import SSNumeric
 
-data Population = Population { critters :: [Critter]
-                             , epsilon :: [Maybe Float]
-                             } deriving Show
+data Population a = Population { critters :: [Critter a]
+                               , epsilon :: [Maybe Float]
+                               } deriving Show
 
-genPopulation :: SS Population
+genPopulation :: SS a (Population a)
 genPopulation = undefined

@@ -1,12 +1,23 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MonoLocalBinds #-}
 
-module SSMonad ( module SSMonad
+-- TODO: Move this into Engine.NEAT
+module SSMonad ( module RealNum
                , module Control.Monad.Trans.State
                , module Data.Semigroup
                , module Data.Complex
                , liftIO
                , Config(..)
+               , initialConfig
+               , getConfig
+               , updateConfig
+               , nextRandom
+               , nextSequenceNumber
+               , nextInnovationNumber
+               , SS(..)
+               , nsi
+               , nxi
+               , Random(..)
                ) where
 
 import Control.Monad.Trans.State
@@ -14,22 +25,22 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Semigroup
 import Data.Complex (Complex)
 import System.Random ( StdGen, Random(randomR), newStdGen )
-import SSNumeric ( SSNum, SSNumeric(SSDouble) )
+import RealNum 
 
 import Engine.NEAT.Genetics.GeneTypes  ( NType(Inhibitory, Regular) )
 import Engine.NEAT.Evolution.GoalTypes ( Goal(..) )
 
 default (Double)
 
-data Config = Config { population_size   :: Int
-                     , neuron_types      :: [NType]
+data Config a = Config { population_size   :: Int
+                     , neuron_types      :: [NType a]
                      , goal              :: Goal
                      , sequence_number   :: Int
                      , innovation_number :: Int
                      , num_inputs        :: Int
                      , num_outputs       :: Int
                      , rng               :: IO StdGen -- use nextRandom instead
-                     , max_weight        :: SSNumeric
+                     , max_weight        :: a
                      , request_port      :: Int
                      , start_in_port     :: Int
                      , end_in_port       :: Int
@@ -39,7 +50,7 @@ data Config = Config { population_size   :: Int
                      , base_out_address  :: String
                      } 
 
-instance Show Config where
+instance Show a => Show (Config a) where
   show (Config popize
                nt
                goal
@@ -75,13 +86,13 @@ instance Show Config where
     where
       rngShow = "<IO StdGen>"
 
-newtype SS a = SS { runSS :: StateT Config IO a }
+newtype SS r a = SS { runSS :: StateT (Config r) IO a }
              deriving ( Functor
                       , Applicative
                       , Monad
                       , MonadIO )
   
-initialConfig :: Config
+initialConfig :: forall a. (RealNum a, Fractional a) => Config a
 initialConfig = Config { population_size   = 100
                        , neuron_types      = [ Regular (\x -> x)
                                              , Inhibitory (\x -> x)
@@ -92,7 +103,7 @@ initialConfig = Config { population_size   = 100
                        , num_inputs        = 10
                        , num_outputs       = 2
                        , rng               = newStdGen
-                       , max_weight        = SSDouble 2.0
+                       , max_weight        = 2.0 :: a
                        , request_port      = 31000
                        , start_in_port     = 31020
                        , end_in_port       = 31499
@@ -102,15 +113,15 @@ initialConfig = Config { population_size   = 100
                        , base_out_address  = "tcp://127.0.0.1:"
                        }
 
-getConfig :: SS Config
+getConfig :: SS a (Config a)
 getConfig = SS get
 
-updateConfig :: Config -> SS ()
+updateConfig :: Config a -> SS a ()
 updateConfig newconf = SS $ put newconf
 
 -- TODO: The following two monads share similar functionality and should
 -- TODO: be DRYed up. Or not bother?
-nextSequenceNumber :: SS Int
+nextSequenceNumber :: SS r Int
 nextSequenceNumber = do
   config <- getConfig
   let next' = config.sequence_number
@@ -118,7 +129,7 @@ nextSequenceNumber = do
   updateConfig uconf
   pure next'
 
-nextInnovationNumber :: SS Int
+nextInnovationNumber :: SS r Int
 nextInnovationNumber = do
   config <- getConfig
   let next_innov = config.innovation_number
@@ -126,13 +137,13 @@ nextInnovationNumber = do
   updateConfig uconf
   return next_innov
 
-nsi :: SS Int
+nsi :: SS r Int
 nsi = nextSequenceNumber
 
-nxi :: SS Int
+nxi :: SS r Int
 nxi = nextInnovationNumber
 
-nextRandom :: forall a. (SSNum a, Random a) => (a, a) -> SS a
+nextRandom :: forall a. (RealNum a, Random a) => (a, a) -> SS a a
 nextRandom (from, to) = do
   cfg <- getConfig
   rn <- liftIO $ do
