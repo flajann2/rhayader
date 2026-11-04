@@ -21,13 +21,13 @@ import Raylib.Types
   , Color (..)
   , Camera3D (..)
   , CameraProjection (CameraPerspective)
-  , KeyboardKey (KeyR)
+  , KeyboardKey (KeyR, KeyUp, KeyDown)
   , MouseButton (MouseButtonRight)
   )
 import Raylib.Util (whileWindowOpen0, withWindow, drawing, mode3D)
 import Raylib.Util.Colors (white, red, green, blue)
 import Raylib.Util.GUI (guiSlider, guiButton, guiLabel)
-import Control.Monad (when)
+import Control.Monad (when, forM_)
 import Data.IORef
 import Engine.NEAT.Izhikevich
 
@@ -48,24 +48,22 @@ data CameraState = CameraState
 
 data Config = Config { windowWidth   :: Int
                      , windowHeight  :: Int
-                     , neuronParams  :: IzhikevichParams Float
+                     , initialPreset :: IzhPreset
                      , initialCamera :: CameraState
                      , tau           :: Double  -- delay embedding lag
                      , initialI      :: Float   -- injected/synaptic current
                      , windowName    :: String
                      }
 
-initialIzhikevichParams :: IzhikevichParams Float
-initialIzhikevichParams = (IzhikevichParams 0.02 0.2 (-65.0) 8.0)
-
 defaultConfig :: Config
-defaultConfig = (Config 2560 1600
-                        initialIzhikevichParams
-                        (CameraState 0.8 0.5 45.0)
-                        0.0
-                        10.0
-                        "3D Phase Portrait - Izhikevich Neuron, Delay Embedding"
-                )
+defaultConfig = Config 2560 1600
+                       RegularSpiking
+                       (CameraState 0.8 0.5 45.0)
+                       0.0
+                       10.0
+                       "3D Phase Portrait - Izhikevich Neuron, Delay Embedding"
+
+defaultI :: Float
 defaultI = 10.0  -- injected/synaptic current
 
 initialNeuronState :: IzhikevichParams Float -> NeuronState Float
@@ -100,28 +98,75 @@ orbitToVector3 (CameraState yaw pitch dist) =
 dt :: Float
 dt = 0.5
 
+-- | Cyclic successor / predecessor for keyboard navigation of the preset list.
+nextPreset, prevPreset :: IzhPreset -> IzhPreset
+nextPreset p = if p == maxBound then minBound else succ p
+prevPreset p = if p == minBound then maxBound else pred p
+
+-- Preset list layout
+listX, listY, listW, listRowH :: Float
+listX    = 20
+listY    = 370
+listW    = 260
+listRowH = 24
+
 run :: Config -> IO ()
 run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> do
-  orbitRef      <- newIORef (CameraState 0.8 0.5 45.0)
-  neuronRef     <- newIORef (initialNeuronState initialIzhikevichParams)
+  let startParams = preset cfg.initialPreset :: IzhikevichParams Float
+  orbitRef      <- newIORef cfg.initialCamera
+  neuronRef     <- newIORef (initialNeuronState startParams)
   vHistoryRef   <- newIORef ([] :: [Float])
   trailRef      <- newIORef ([] :: [Vec3])
-  aRef          <- newIORef cfg.neuronParams.za
-  bRef          <- newIORef cfg.neuronParams.zb
-  cRef          <- newIORef cfg.neuronParams.zc
-  dRef          <- newIORef cfg.neuronParams.zd
+  presetRef     <- newIORef cfg.initialPreset
+  aRef          <- newIORef startParams.za
+  bRef          <- newIORef startParams.zb
+  cRef          <- newIORef startParams.zc
+  dRef          <- newIORef startParams.zd
   iRef          <- newIORef cfg.initialI
   let maxPoints = 15000 :: Int
 
+      clearTrail = do
+        writeIORef trailRef []
+        writeIORef vHistoryRef []
+
+      -- Restart the neuron from rest using whatever a/b/c/d are current.
+      restart = do
+        ps <- IzhikevichParams <$> readIORef aRef <*> readIORef bRef
+                               <*> readIORef cRef <*> readIORef dRef
+        writeIORef neuronRef (initialNeuronState ps)
+        clearTrail
+
+      -- Load a preset into the sliders and restart the neuron with it.
+      applyPreset p = do
+        let ps = preset p :: IzhikevichParams Float
+        writeIORef presetRef p
+        writeIORef aRef ps.za
+        writeIORef bRef ps.zb
+        writeIORef cRef ps.zc
+        writeIORef dRef ps.zd
+        restart
+
   whileWindowOpen0 $ do
+    -- Keyboard input is handled before the parameters are read, so a preset
+    -- change isn't overwritten by this frame's slider write-back.
+    upPressed    <- isKeyPressed KeyUp
+    downPressed  <- isKeyPressed KeyDown
+    resetPressed <- isKeyPressed KeyR
+    when upPressed   $ readIORef presetRef >>= applyPreset . prevPreset
+    when downPressed $ readIORef presetRef >>= applyPreset . nextPreset
+    when resetPressed restart
+
     a    <- readIORef aRef
     b    <- readIORef bRef
     c    <- readIORef cRef
     d    <- readIORef dRef
     iCur <- readIORef iRef
+    selected <- readIORef presetRef
+    let current  = IzhikevichParams a b c d
+        modified = current /= (preset selected :: IzhikevichParams Float)
 
     neuron <- readIORef neuronRef
-    let neuron' = stepIzh dt (IzhikevichParams a b c d) iCur neuron
+    let neuron' = stepIzh dt current iCur neuron
     writeIORef neuronRef neuron'
 
     vHist <- readIORef vHistoryRef
@@ -137,11 +182,6 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
     trail <- readIORef trailRef
     writeIORef trailRef (take maxPoints (embedPoint : trail))
 
-    resetPressed <- isKeyPressed KeyR
-    when resetPressed $ do
-      writeIORef neuronRef neuron
-      writeIORef trailRef []
-      writeIORef vHistoryRef []
     dragging        <- isMouseButtonDown MouseButtonRight
     Vector2 mdx mdy <- getMouseDelta
     wheel           <- getMouseWheelMove
@@ -175,32 +215,40 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
         drawTrail trailPoints
         drawSphere (toVector3 embedPoint) 0.6 (Color 255 70 70 255)
       drawText "Izhikevich Neuron -- Phase Portrait (v, u, v(t-tau))" 20 20 24 white
-      drawText "Drag mouse to orbit * Scroll to zoom * R = reset" 20 50 18 (Color 200 200 220 255)
+      drawText "Right-drag to orbit * Scroll to zoom * R = reset * Up/Down = preset" 20 50 18 (Color 200 200 220 255)
       drawFPS 20 80
 
-      -- GUI overlay: a/b/c/d/I sliders + redraw button
-      guiLabel (Rectangle 20 110 200 20) "Izhikevich Parameters"
+      -- GUI overlay: a/b/c/d/I sliders + redraw button.
+      -- Ranges are wide enough to hold every preset (a up to 1.0, negative b,
+      -- d down to -21), since guiSlider clamps values outside its range.
+      guiLabel (Rectangle 20 110 260 20)
+        (if modified then "Izhikevich Parameters (modified)" else "Izhikevich Parameters")
 
-      (_, a') <- guiSlider (Rectangle 100 135 200 20) (Just "a") (Just (showF a)) a 0.0 0.2
+      (_, a') <- guiSlider (Rectangle 100 135 200 20) (Just "a") (Just (showF a)) a (-0.05) 1.05
       writeIORef aRef a'
 
-      (_, b') <- guiSlider (Rectangle 100 165 200 20) (Just "b") (Just (showF b)) b 0.0 0.3
+      (_, b') <- guiSlider (Rectangle 100 165 200 20) (Just "b") (Just (showF b)) b (-1.05) 1.55
       writeIORef bRef b'
 
       (_, c') <- guiSlider (Rectangle 100 195 200 20) (Just "c") (Just (showF c)) c (-80.0) (-30.0)
       writeIORef cRef c'
 
-      (_, d') <- guiSlider (Rectangle 100 225 200 20) (Just "d") (Just (showF d)) d 0.0 10.0
+      (_, d') <- guiSlider (Rectangle 100 225 200 20) (Just "d") (Just (showF d)) d (-22.0) 10.0
       writeIORef dRef d'
 
       (_, i') <- guiSlider (Rectangle 100 255 200 20) (Just "I") (Just (showF iCur)) iCur (-10.0) 40.0
       writeIORef iRef i'
 
       redrawClicked <- guiButton (Rectangle 20 290 120 30) (Just "Redraw")
-      when redrawClicked $ do
-        writeIORef neuronRef (initialNeuronState initialIzhikevichParams)
-        writeIORef trailRef []
-        writeIORef vHistoryRef []
+      when redrawClicked restart
+
+      -- Preset list: drawn after the sliders so a click here wins this frame.
+      guiLabel (Rectangle listX (listY - 26) listW 20) "Presets (click or Up/Down)"
+      forM_ (zip [0 :: Int ..] allPresets) $ \(row, p) -> do
+        let y     = listY + fromIntegral row * listRowH
+            label = (if p == selected then "> " else "   ") ++ show p
+        clicked <- guiButton (Rectangle listX y listW (listRowH - 2)) (Just label)
+        when clicked (applyPreset p)
   where
     clampPitch :: Float -> Float
     clampPitch p = max (-maxPitch) (min maxPitch p)

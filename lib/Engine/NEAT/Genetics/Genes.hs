@@ -52,10 +52,10 @@ data Node a = Node { ntype    :: NType a
 
 -- | Connection between nodes (neurons) which are evolvable.
 data Connection a = Connection { innovation :: Int
-                                , node_in    :: Int
-                                , node_out   :: Int
-                                , weight     :: a
-                                , enabled    :: Bool
+                                , node_in   :: Int
+                                , node_out  :: Int
+                                , weight    :: a
+                                , enabled   :: Bool
                                 } deriving Show
 instance Eq a => Eq (Connection a) where
   (==) :: Connection a -> Connection a -> Bool
