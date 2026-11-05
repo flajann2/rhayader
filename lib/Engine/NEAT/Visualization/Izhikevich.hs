@@ -267,7 +267,7 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
       drawLine3D o (Vector3 0 0 s) blue
 
     drawTrail :: [Vec3] -> IO ()
-    drawTrail [] = return ()
+    drawTrail []  = return ()
     drawTrail [_] = return ()
     drawTrail (p1@(Vec3 _ _ z1) : p2@(Vec3 _ _ z2) : rest) = do
       let v1 = toVector3 p1
