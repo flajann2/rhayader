@@ -21,12 +21,12 @@ import Raylib.Types
   , Color (..)
   , Camera3D (..)
   , CameraProjection (CameraPerspective)
-  , KeyboardKey (KeyR, KeyUp, KeyDown)
+  , KeyboardKey (KeyR, KeyT, KeyUp, KeyDown)
   , MouseButton (MouseButtonRight)
   )
 import Raylib.Util (whileWindowOpen0, withWindow, drawing, mode3D)
 import Raylib.Util.Colors (white, red, green, blue)
-import Raylib.Util.GUI (guiSlider, guiButton, guiLabel)
+import Raylib.Util.GUI (guiSlider, guiButton, guiLabel, guiLoadStyle, guiLoadStyleDefault)
 import Control.Monad (when, forM_)
 import Data.IORef
 import Engine.NEAT.Izhikevich
@@ -103,6 +103,23 @@ nextPreset, prevPreset :: IzhPreset -> IzhPreset
 nextPreset p = if p == maxBound then minBound else succ p
 prevPreset p = if p == minBound then maxBound else pred p
 
+-- | raygui themes, cycled with T. "default" is the built-in style; the rest
+--   are loaded from assets/styles/<name>.rgs, relative to the directory the
+--   program is run from (the project root under `cabal run`).
+styles :: [String]
+styles = ["default", "dark", "jungle", "cyber", "terminal", "amber", "candy",
+          "cherry", "lavanda", "bluish", "ashes", "enefete", "sunny"]
+
+-- | Style name at an index, wrapping around (total, unlike `!!`).
+styleAt :: Int -> String
+styleAt i = case drop (i `mod` length styles) styles of
+  (s : _) -> s
+  []      -> "default"
+
+loadStyleNamed :: String -> IO ()
+loadStyleNamed "default" = guiLoadStyleDefault
+loadStyleNamed s         = guiLoadStyle ("assets/styles/" ++ s ++ ".rgs")
+
 -- Preset list layout
 listX, listY, listW, listRowH :: Float
 listX    = 20
@@ -123,6 +140,9 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
   cRef          <- newIORef startParams.zc
   dRef          <- newIORef startParams.zd
   iRef          <- newIORef cfg.initialI
+  styleRef      <- newIORef (0 :: Int)
+  -- Must run after the window (and its GL context) exists.
+  loadStyleNamed (styleAt 0)
   let maxPoints = 15000 :: Int
 
       clearTrail = do
@@ -155,6 +175,12 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
     when upPressed   $ readIORef presetRef >>= applyPreset . prevPreset
     when downPressed $ readIORef presetRef >>= applyPreset . nextPreset
     when resetPressed restart
+
+    tPressed <- isKeyPressed KeyT
+    when tPressed $ do
+      modifyIORef' styleRef (\i -> (i + 1) `mod` length styles)
+      readIORef styleRef >>= loadStyleNamed . styleAt
+    styleIdx <- readIORef styleRef
 
     a    <- readIORef aRef
     b    <- readIORef bRef
@@ -215,7 +241,7 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
         drawTrail trailPoints
         drawSphere (toVector3 embedPoint) 0.6 (Color 255 70 70 255)
       drawText "Izhikevich Neuron -- Phase Portrait (v, u, v(t-tau))" 20 20 24 white
-      drawText "Right-drag to orbit * Scroll to zoom * R = reset * Up/Down = preset" 20 50 18 (Color 200 200 220 255)
+      drawText "Right-drag to orbit * Scroll to zoom * R = reset * Up/Down = preset * T = style" 20 50 18 (Color 200 200 220 255)
       drawFPS 20 80
 
       -- GUI overlay: a/b/c/d/I sliders + redraw button.
@@ -241,6 +267,8 @@ run cfg = withWindow cfg.windowWidth cfg.windowHeight cfg.windowName 60 $ \_ -> 
 
       redrawClicked <- guiButton (Rectangle 20 290 120 30) (Just "Redraw")
       when redrawClicked restart
+
+      drawText ("Style: " ++ styleAt styleIdx ++ "  (T to cycle)") 150 297 18 white
 
       -- Preset list: drawn after the sliders so a click here wins this frame.
       guiLabel (Rectangle listX (listY - 26) listW 20) "Presets (click or Up/Down)"
